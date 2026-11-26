@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: cobalt-forge-lab
+
+# Por ahora solo HTTP. La configuración HTTPS (SSL bundle con los PEM de cert/)
+# se agrega cuando el tutorial de certificados llegue al certificado de servidor.
+server:
+  port: 8443
+  ssl:
+    key-store: file:../cert/lab.cobalt-forge.test.p12
+    key-store-type: PKCS12
+    key-store-password: ${COBALT_FORGE_P12_PASSWORD}
+    key-alias: cobalt-forge

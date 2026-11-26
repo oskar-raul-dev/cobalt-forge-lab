@@ -1,0 +1,107 @@
+# =====================================================================
+#  Cobalt Forge Lab — material criptográfico generado por los labs:
+#  NUNCA se versiona. Las llaves públicas (.pub, *.pub.asc) sí pueden
+#  subirse; si un lab necesita ignorarlas, hágalo en su propio .gitignore.
+# =====================================================================
+
+# --- Directorios cert/ de cualquier lab: solo se sube su README --------
+**/cert/*
+!**/cert/README.md
+
+# --- X.509 / PKI (01-x509-lab) -----------------------------------------
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.csr
+*.srl
+*.crl
+*.p7b
+*.p7c
+*.p8
+*.pk8
+*.p12
+*.pfx
+*.jks
+*.jceks
+*.bks
+*.keystore
+*.truststore
+index.txt
+index.txt.attr
+index.txt.old
+serial
+serial.old
+crlnumber
+crlnumber.old
+
+# --- SSH (02-SSH-lab) ---------------------------------------------------
+# Llaves privadas (las .pub y los -cert.pub se pueden versionar)
+id_rsa
+id_dsa
+id_ecdsa
+id_ecdsa_sk
+id_ed25519
+id_ed25519_sk
+*_rsa
+*_ecdsa
+*_ed25519
+*.ppk
+known_hosts
+known_hosts.old
+authorized_keys
+
+# --- OpenPGP / GnuPG (03-OpenPGP-lab) -----------------------------------
+# Homedir de GnuPG y keyrings
+.gnupg/
+gnupg-home/
+*.gpg
+*.kbx
+*.kbx~
+pubring.*
+secring.*
+trustdb.gpg
+private-keys-v1.d/
+openpgp-revocs.d/
+random_seed
+# Exportaciones de llaves privadas / revocación
+*secret*.asc
+*private*.asc
+*.sec.asc
+*.rev
+# Mensajes cifrados/firmados sueltos (salidas de ejercicios)
+*.pgp
+*.sig
+
+# --- SOPS / age (03-OpenPGP-lab, 04-Age-Lab) ----------------------------
+# Los archivos *.enc.* (cifrados con SOPS) SÍ se versionan.
+# Sus versiones en claro, no.
+*.dec
+*.dec.*
+*.decrypted
+*.decrypted.*
+*.plain.*
+# Identidades age (llave privada)
+keys.txt
+*.agekey
+age-key.txt
+identity.txt
+
+# --- Secretos y variables de entorno ------------------------------------
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+.vault-token
+*.tfstate
+*.tfstate.*
+
+# --- Build / IDE / SO ---------------------------------------------------
+**/target/
+*.code-workspace
+.idea/
+.DS_Store
+*.bkp
+*~

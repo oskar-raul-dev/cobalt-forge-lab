@@ -1,0 +1,204 @@
+# 02 · Spec Kit (GitHub)
+
+> **Estado:** 🟡 sketch · **Última verificación:** 2026-11-25 · **Versión documentada:** 1.0.x (1.0.0 del 21-ago-2026; 1.0.6 del 10-sep-2026 [VERIFICAR última])
+> **Nivel SDD:** 2 · Spec-first (por feature; `/speckit-converge` lo acerca a anchored dentro del feature)
+> **Relacionado:** [01 · Brief](01-brief-frameworks-dev-ia.md) · [03 · OpenSpec](03-openspec.md)
+
+Convenciones: `TODO:` falta escribir · `[VERIFICAR]` confirmar con fuente primaria · `[OPINIÓN]` valoración propia.
+
+---
+
+## 1. Resumen (TL;DR)
+Kit open source de GitHub para Spec-Driven Development con cualquier agente de código. Una CLI (`specify`), plantillas y slash commands llevan cada feature por constitución → spec → aclaración → plan → tareas → implementación → convergencia. Es la implementación de referencia del SDD "completo".
+
+## 2. Origen y contexto
+- **Organización:** GitHub. Primer commit el 21-ago-2025 (Den Delimarsky). Desde el 22-ene-2026 el mantenedor principal es Manfred Riem (*community stewardship*) [VERIFICAR nombre completo].
+- **Hitos:** anuncio en septiembre de 2025 (blog de Microsoft Dev) → serie 0.x → **1.0.0 (21-ago-2026)** con 5 primitivas: integraciones, extensiones, presets, workflows y pasos de workflow.
+- **Problema:** "vibe coding" sin intención persistente; los agentes producen código plausible pero sin alinear con requisitos.
+- **Licencia:** MIT.
+- **Métricas (nov-2026):** ~96k estrellas, 200+ contribuidores, 30 integraciones, 91 extensiones, 22 presets [VERIFICAR].
+- TODO: historia completa desde `docs/history.md` del repo.
+
+## 3. Filosofía y principios
+- La spec es la fuente de verdad; el código es el resultado.
+- Separar el **qué/por qué** (`specify`) del **cómo** (`plan`).
+- Constitución = reglas no negociables que gobiernan todas las specs y planes.
+- Tres modos de uso desde el inicio: 0-to-1 (greenfield), exploración paralela y mejora de brownfield.
+- Nota del mantenedor: la 1.0 **no** promete estabilidad de API; los breaking changes los migra el propio agente [VERIFICAR fuente original].
+- TODO: resumir `spec-driven.md` (documento de metodología del repo).
+
+## 4. Nivel SDD y ubicación en el espectro
+- **Nivel:** 2 · Spec-first (Böckeler lo clasifica así).
+- **Justificación:** la spec se escribe antes y guía la implementación, pero no se mantiene sincronizada con el sistema después del merge.
+- **Movimiento:** `/speckit-converge` compara código ↔ spec/plan/tasks y agrega tareas hasta "Converged": anchored *dentro del feature*, no a nivel sistema.
+- TODO: analizar si existen extensiones de la comunidad que mantengan una spec viva (p. ej. `spec-kit-refine`).
+
+## 5. Conceptos y glosario propio
+Términos generales usados en este capítulo (definidos en el [glosario general](00-glosario.md)): [especificación (spec)](00-glosario.md#spec-driven-development) · [nivel 2 · spec-first](00-glosario.md#spec-driven-development) · [nivel 3 · spec-anchored](00-glosario.md#spec-driven-development) · [spec viva](00-glosario.md#spec-driven-development) · [trazabilidad](00-glosario.md#spec-driven-development) · [criterio de aceptación](00-glosario.md#spec-driven-development) · [cascada disfrazada](00-glosario.md#spec-driven-development) · [comando de barra](00-glosario.md#estandares-y-protocolos) · [agnóstico](00-glosario.md#agentes-y-arnes) · [subagente](00-glosario.md#agentes-y-arnes) · [funcionalidad (feature)](00-glosario.md#procesos-roles-y-rituales) · [puerta](00-glosario.md#procesos-roles-y-rituales) · [greenfield / brownfield](00-glosario.md#procesos-roles-y-rituales) · [TDD](00-glosario.md#git-testing-e-infraestructura) · [worktree](00-glosario.md#git-testing-e-infraestructura).
+
+| Término (EN) | Español | Definición | Mini-ejemplo |
+|---|---|---|---|
+| Constitution | Constitución | Principios rectores del proyecto; se crea una vez y se puede apilar en capas con presets | Regla "test-first: ningún endpoint sin un test que falle antes", válida para todos los features |
+| `spec.md` | Spec del feature | Artefacto de Spec Kit con requisitos, historias y criterios de aceptación de un feature (concepto general: [spec](00-glosario.md#spec-driven-development)) | `spec.md` del módulo de pedidos: "crear pedido valida stock antes de confirmar" |
+| `plan.md` | Plan técnico | Stack, arquitectura y diseño del feature; responde al *cómo* | `plan.md`: "API REST, sin dependencias nuevas sin justificar" |
+| `tasks.md` | Tareas | Tareas ordenadas por dependencias, derivadas de spec y plan | T1 modelo `Pedido` → T2 endpoint `POST /pedidos` → T3 tests |
+| Converge | Convergencia | Ciclo implement ↔ converge que compara código con spec/plan/tasks y agrega tareas hasta "Converged" | Converge detecta que falta la validación de stock y agrega una tarea a `tasks.md` |
+| Integration | Integración | Adaptador para un agente concreto (30+) | `specify init mi-proyecto --integration claude` [VERIFICAR flag en §6] |
+| Extension | Extensión | Agrega comandos, puertas de calidad o procesos completos | La extensión `bug` agrega `/speckit-bug-assess`, `/speckit-bug-fix` y `/speckit-bug-test` |
+| Preset | Preset | Cambia plantillas, terminología o estándares sin agregar capacidades | Preset del equipo que exige criterios de aceptación en todas las specs (ejemplo ilustrativo) |
+| Bundle | Paquete | Combina extensiones, presets y workflows | Bundle que instala la extensión `bug` y el preset del equipo (ejemplo ilustrativo) |
+| Workflow | Flujo automatizado | Automatiza procesos repetibles | Encadenar specify → plan → tasks en cada feature nuevo (ejemplo ilustrativo) |
+| Feature state | Estado del feature | `.specify/feature.json`: feature activo (no depende de la rama git) | Sigues en `main`, pero `feature.json` indica que el feature activo es el de pedidos |
+
+## 6. Instalación y requisitos
+- Python 3.11+ y `uv`.
+```bash
+uv tool install specify-cli
+# o fijando versión:
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z
+specify init mi-proyecto --integration copilot   # claude, codex, gemini, cursor...
+```
+- TODO: lista completa de valores de `--integration` [VERIFICAR en el índice de integraciones].
+- TODO: instalación en entornos offline y empresariales.
+
+## 7. Flujo de trabajo paso a paso
+| Paso | Comando | Qué hace | Artefacto | ¿Control humano? |
+|---|---|---|---|---|
+| 1 | `/speckit-constitution` | Principios del proyecto (una vez) | Constitución | Sí |
+| 2 | `/speckit-specify` | Spec desde lenguaje natural | `spec.md` | Sí |
+| 3 | `/speckit-clarify` | Preguntas sobre huecos; las integra | `spec.md` refinado | Sí |
+| 4 | `/speckit-plan` | Diseño técnico, stack y arquitectura | `plan.md` | Sí |
+| 5 | `/speckit-checklist` | Checklist de calidad de requisitos | `checklists/*.md` | Sí (revisor) |
+| 6 | `/speckit-tasks` | Tareas ordenadas por dependencias | `tasks.md` | Opcional |
+| 7 | `/speckit-analyze` | Consistencia spec/plan/tasks (solo lectura) | Reporte | Sí |
+| 8 | `/speckit-implement` | Ejecuta las tareas; revisa el checklist antes | Código | Si hay ítems sin marcar |
+| 9 | `/speckit-converge` | Compara código y spec; agrega tareas | `tasks.md` + | Hasta "Converged" |
+
+- **Ruta corta:** specify → plan → tasks → implement → converge.
+- **Sintaxis:** en 1.0 los comandos usan guion (`/speckit-plan`); en versiones antiguas usaban punto (`/speckit.plan`) [VERIFICAR por agente].
+- TODO: transcribir un ejemplo real de cada paso.
+
+## 8. Artefactos y estructura de archivos
+```
+.specify/
+├── memory/            # constitución [VERIFICAR ruta exacta]
+├── templates/
+│   └── overrides/     # personalización local (prioridad 1)
+├── presets/           # prioridad 2
+├── extensions/        # prioridad 3
+├── feature.json       # feature activo
+├── bugs/<slug>/       # extensión bug
+└── assessments/<slug>/# extensión assess
+specs/<NNN-feature>/   # spec.md, plan.md, tasks.md, checklists/ [VERIFICAR layout]
+```
+
+## 9. Personalización y extensiones
+- **Orden de prioridad:** overrides locales → presets → extensiones → core.
+- **Extensiones oficiales:** `bug` (`/speckit-bug-assess|fix|test`) y `assess` (intake, research, define, shape, decide).
+- **Comunidad:** spec-kit-tdd, spec-kit-refine, spec-kit-figma, spec-kit-tasks-to-project, Confluence, Blueprint, Conduct (orquestación con subagentes), DocGuard, Atlas [VERIFICAR estado].
+- **Constitución por capas:** base de la organización → reglas de dominio → equipo (vía presets).
+- **CLI:** `specify extension|preset|workflow|bundle search/add`.
+- ⚠️ Estar en el catálogo no significa estar auditado: revisar el código antes de instalar.
+- TODO: tutorial para crear un preset propio.
+
+## 10. Uso en brownfield
+- Guía oficial: *Adopting Spec Kit in an Existing Project* [VERIFICAR URL].
+- Práctica recomendada: inferir la constitución del código real y escribir specs solo para cambios nuevos.
+- Thoughtworks reporta uso mayoritario en brownfield con ciclo spec → plan → tasks → code → review.
+- Walkthroughs de la comunidad: proyecto Java multi-módulo sin specs previas; dashboard Go/React con Copilot CLI.
+- TODO: documentar un caso propio.
+
+## 11. Compatibilidad con agentes
+| Agente | Soporte | Cómo se invoca | Notas |
+|---|---|---|---|
+| GitHub Copilot | ✅ | `/speckit-*` | Ejemplo por defecto en la documentación |
+| Claude Code | ✅ | `/speckit-*` | TODO |
+| Codex | ✅ [VERIFICAR] | TODO | |
+| Gemini CLI | ✅ [VERIFICAR] | TODO | |
+| Cursor | ✅ [VERIFICAR] | TODO | |
+| Otros (≈30) | | | TODO: tabla desde el índice de integraciones |
+
+## 12. Ejemplo práctico
+- TODO greenfield: módulo de pedidos con constitución "test-first + API REST + sin dependencias nuevas sin justificar".
+- TODO brownfield: "descuento por volumen" sobre el sistema de inventario existente.
+- TODO: medir tiempo, tokens, archivos generados y líneas de Markdown vs líneas de código.
+
+## 13. Ventajas
+- Realmente agnóstico (30+ agentes); la spec viaja entre herramientas.
+- Trazabilidad requisito → tarea → código.
+- `clarify` y `analyze` sacan la ambigüedad antes de programar.
+- Ecosistema grande y respaldado por GitHub; constitución por capas para empresas.
+
+## 14. Desventajas y críticas
+- Markdown verboso y repetitivo, a veces más pesado de revisar que el código (Böckeler/Fowler).
+- Verificaciones defensivas innecesarias y salidas que aumentan la carga cognitiva (Thoughtworks Radar).
+- La spec se desactualiza tras el merge (crítica general a SDD).
+- Riesgo de "cascada disfrazada" (Marmelab).
+- Excesivo para bugfixes; API todavía en movimiento.
+- Mitigación: personalizar plantillas para limitar archivos y verbosidad.
+
+## 15. Dónde brilla y dónde evitarlo
+| Brilla en | Evitar en |
+|---|---|
+| Features nuevos medianos/grandes | Prototipos desechables |
+| Equipos de 3+ que necesitan acuerdos | Bugfixes pequeños (usar la extensión `bug` o nada) |
+| Contextos regulados / auditoría | Exploración sin objetivo claro |
+| Organizaciones con varios agentes | Dev solo con cambios mínimos frecuentes (mejor OpenSpec) |
+
+## 16. Combinaciones con otros frameworks
+- Spec Kit (qué) + Superpowers (cómo, con TDD); existe un puente de la comunidad "Spec Kit writes WHAT. Superpowers enforces HOW" [VERIFICAR repo].
+- AI-DLC como proceso de equipo + Spec Kit como formato de artefactos.
+- RPI como research previo a `/speckit-specify` en brownfield.
+
+## 17. Preguntas abiertas
+- ¿Cómo se comporta `converge` en features grandes? ¿Cuántas iteraciones hacen falta?
+- ¿Existe una forma oficial de pasar de spec-first a spec-anchored?
+- Costo real en tokens por feature, comparado con OpenSpec.
+- Diferencias de comportamiento entre integraciones (Claude vs Copilot vs Codex).
+
+## 18. Referencias
+### Oficiales
+- Repositorio — https://github.com/github/spec-kit
+- Documentación — https://github.github.io/spec-kit/
+- Instalación — https://github.github.io/spec-kit/installation.html
+- Quickstart — https://github.github.io/spec-kit/quickstart.html
+- Personalización — https://github.github.io/spec-kit/guides/customization.html
+- Historia — https://github.github.com/spec-kit/history.html
+- Comunidad (extensiones, presets) — https://github.github.com/spec-kit/community/overview.html
+- Metodología — https://github.com/github/spec-kit/blob/main/spec-driven.md
+- Releases — https://github.com/github/spec-kit/releases
+- Post del primer aniversario — https://www.manorrock.com/blog/2026/08/21/spec_kit_turns_one.html
+### Artículos y guías
+- Microsoft Dev Blog, *Diving Into Spec-Driven Development With GitHub Spec Kit* (sep-2025) — https://developer.microsoft.com/blog/spec-driven-development-spec-kit/
+- Microsoft Dev Blog, *From Spec-First to Enterprise-Ready: Extending GitHub Spec Kit* (oct-2026) — https://developer.microsoft.com/blog/from-spec-first-to-enterprise-ready-extending-github-spec-kit/
+- Thoughtworks Radar, GitHub Spec Kit — https://www.thoughtworks.com/radar/languages-and-frameworks/github-spec-kit
+- InfoWorld, *4 cutting-edge tools for spec-driven development* (may-2026) — https://infoworld.com/article/4171332/four-cutting-edge-tools-for-spec-driven-development.html
+### Comparativas
+- Böckeler, *Understanding Spec-Driven-Development: Kiro, spec-kit, and Tessl* — https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html
+- *Spec Kit vs BMAD vs OpenSpec: Choosing an SDD Framework in 2026* — https://dev.to/willtorber/spec-kit-vs-bmad-vs-openspec-choosing-an-sdd-framework-in-2026-d3j
+- *GitHub Spec Kit vs Kiro vs Claude Code SDD workflows* — https://dev.to/rosgluk/github-spec-kit-vs-kiro-vs-claude-code-sdd-workflows-1fi1
+- *Spec-Driven Development Tools Compared* (nov-2026) — https://www.testmuai.com/blog/spec-driven-development-tools/
+- spec-compare (worktrees, niveles de madurez) — https://github.com/cameronsjo/spec-compare
+- Paper *From Prompt to Process* (jun-2026) — https://www.alphaxiv.org/abs/2606.04967
+- *SDD Frameworks a Year Later* — https://levelup.gitconnected.com/spec-driven-development-frameworks-a-year-later-pattern-families-measurements-and-a-choice-matrix-125bcddf1e64
+- Enterprise comparison (BMAD/SpecKit/OpenSpec) — https://davidedaniel.github.io/research/papers/sdd-frameworks/frameworks-comparison.html
+### Críticas
+- Marmelab, *The Waterfall Strikes Back* — https://marmelab.com/blog/2025/11/12/spec-driven-development-waterfall-strikes-back
+- *Spec-Driven Development Renamed an Old Problem* — https://dev.to/sam_curatedmcp/spec-driven-development-renamed-an-old-problem-it-didnt-solve-it-tags-ai-productivity-347a
+- Crítica honesta (Isoform + Fowler) — https://jmlopezdona.github.io/ai-coding-agents-sdd/09-honest-critique/
+### YouTube / charlas
+- *Open Source Friday with Spec Kit* (may-2026) — canal de GitHub [VERIFICAR URL]
+- *Open Source Friday: Spec Kit Part 2* (oct-2026) — canal de GitHub [VERIFICAR URL]
+- TODO: buscar charlas de Den Delimarsky.
+### Libros (base conceptual)
+- Gojko Adzic, *Specification by Example* (2011)
+- Addy Osmani, *Beyond Vibe Coding* (O'Reilly, 2025)
+
+---
+
+## Checklist de completitud
+- [ ] Secciones 6, 7, 8 y 11 verificadas contra la documentación oficial
+- [ ] Ejemplo práctico ejecutado (greenfield y brownfield)
+- [ ] URLs de YouTube confirmadas
+- [ ] Métricas actualizadas
+- [ ] Coherente con el brief (01)
